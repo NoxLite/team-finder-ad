@@ -3,6 +3,8 @@ from django.contrib.auth import get_user_model
 from django.core.validators import URLValidator
 from django.core.exceptions import ValidationError
 
+import constants
+
 User = get_user_model()
 
 
@@ -26,7 +28,11 @@ class LoginForm(forms.Form):
     password = forms.CharField(widget=forms.PasswordInput)
 
 
-class EditProfileForm(forms.ModelForm):
+class EditProfileForm(forms.ModelForm, constants.GitHubURLCleanerMixin):
+    class Meta:
+        model = User
+        fields = ['name', 'surname', 'avatar', 'about', 'phone', 'github_url']
+
     def clean_phone(self):
         phone = self.cleaned_data.get('phone')
 
@@ -46,24 +52,3 @@ class EditProfileForm(forms.ModelForm):
             raise forms.ValidationError('Этот номер телефона уже используется')
 
         return phone
-    
-    def clean_github_url(self):
-        github_url = self.cleaned_data.get('github_url')
-
-        if not github_url:
-            return github_url
-        
-        if not github_url.startswith('https://github.com/'):
-            raise forms.ValidationError('Ссылка на GitHub должна начинаться с https://github.com/')
-        
-        validator = URLValidator()
-        try:
-            validator(github_url)
-        except ValidationError:
-            raise forms.ValidationError('Введите корректную ссылку на GitHub')
-        
-        return github_url
-
-    class Meta:
-        model = User
-        fields = ['name', 'surname', 'avatar', 'about', 'phone', 'github_url']

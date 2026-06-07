@@ -1,11 +1,13 @@
-from django.shortcuts import render, redirect
-from django.views.generic import ListView, DetailView
-from .models import User
-from .forms import RegistrationForm, LoginForm, EditProfileForm
-from django.contrib.auth import login, logout
-from django.contrib.auth import update_session_auth_hash
+from django.contrib.auth import get_user_model, login, logout, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import PasswordChangeForm
+from django.shortcuts import redirect, render
+from django.views.generic import DetailView, ListView
+
+from .forms import EditProfileForm, LoginForm, RegistrationForm
+from .models import User
+
+User = get_user_model()
 
 
 class UserListView(ListView):
@@ -25,31 +27,27 @@ class UserDetailView(DetailView):
 
 
 def registration_view(request):
-    if request.method == 'POST':
-        form = RegistrationForm(request.POST)
-        if form.is_valid():
-            user = form.save()
-            return redirect('users:login')
-    else:
-        form = RegistrationForm()
+
+    form = RegistrationForm(request.POST or None)
+    if form.is_valid():
+        user = form.save()
+        return redirect('users:login')
+
     return render(request, 'users/register.html', {'form': form})
 
 
 def login_view(request):
-    if request.method == 'POST':
-        form = LoginForm(request.POST)
-        if form.is_valid():
-            email = form.cleaned_data['email']
-            password = form.cleaned_data['password']
+    
+    form = LoginForm(request.POST or None)
+    if form.is_valid():
+        email = form.cleaned_data['email']
+        password = form.cleaned_data['password']
 
-            user = User.objects.filter(email=email).first()
-            if user and user.check_password(password):
-                login(request, user)
-                return redirect('projects:projects')
-            else:
-                form.add_error(None, 'Неверный имейл или пароль')
-    else:
-        form = LoginForm()
+        user = User.objects.filter(email=email).first()
+        if user and user.check_password(password):
+            login(request, user)
+            return redirect('projects:projects')
+        form.add_error(None, 'Неверный имейл или пароль')
     return render(request, 'users/login.html', {'form': form})
 
 
@@ -61,25 +59,20 @@ def logout_view(request):
 @login_required
 def profile_change_view(request):
     user = request.user
-    if request.method == 'POST':
-        form = EditProfileForm(request.POST, request.FILES, instance=user)
-        if form.is_valid():
-            form.save()
-            return redirect('users:participant_detail', pk=user.pk)
-    else:
-        form = EditProfileForm(instance=user)
+    form = EditProfileForm(request.POST or None, request.FILES, instance=user)
+    if form.is_valid():
+        form.save()
+        return redirect('users:participant_detail', pk=user.pk)
     return render(request, 'users/edit_profile.html', {'form': form})
 
 
 @login_required
 def password_change_view(request):
     user = request.user
-    if request.method == 'POST':
-        form = PasswordChangeForm(user, request.POST)
-        if form.is_valid():
-            user = form.save()
-            update_session_auth_hash(request, user)
-            return redirect('projects:projects')
-    else:
-        form = PasswordChangeForm(user)
+    form = PasswordChangeForm(user, request.POST or None)
+    if form.is_valid():
+        user = form.save()
+        update_session_auth_hash(request, user)
+        return redirect('projects:projects')
+
     return render(request, 'users/change_password.html', {'form': form})

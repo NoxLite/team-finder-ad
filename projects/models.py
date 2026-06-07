@@ -1,10 +1,13 @@
-from django.db import models
+import constants
+
 from django.conf import settings
+from django.db import models
+
 
 
 class Project(models.Model):
 
-    name = models.CharField(max_length=200, verbose_name="Название проекта")
+    name = models.CharField(max_length=constants.LEN_NAME_PROJECT, verbose_name="Название проекта")
     description = models.TextField(blank=True, verbose_name="Описание проекта")
     owner = models.ForeignKey(
         settings.AUTH_USER_MODEL, 
@@ -16,8 +19,8 @@ class Project(models.Model):
     github_url = models.URLField(blank=True, verbose_name="Ссылка на GitHub")
     status = models.CharField(
         max_length=6, 
-        choices=[('open', 'Открытый'), ('closed', 'Закрытый')],           
-        default='open', 
+        choices=constants.CHOICES_STATUS,           
+        default=constants.DEFAULT_PROJECT_STATUS, 
         verbose_name="Статус проекта"
     )
     participants = models.ManyToManyField(
@@ -31,18 +34,21 @@ class Project(models.Model):
         blank=True,
         verbose_name='Навыки'
     )
-
+    
     class Meta:
         verbose_name = "проект"
         verbose_name_plural = "Проекты"
+    
+    def __str__(self):
+        return f"{self.name} {self.owner.name} ({self.status})"
 
 
 class Skill(models.Model):
-    name = models.CharField(max_length=124, unique=True)
-
-    def __str__(self):
-        return self.name
+    name = models.CharField(max_length=constants.LEN_NAME_SKILL, unique=True)
 
     class Meta:
         verbose_name = "навык"
         verbose_name_plural = "Навыки"
+    
+    def __str__(self):
+        return self.name

@@ -1,7 +1,9 @@
 from django.contrib import admin
+
 from .models import Project, Skill
 
 
+@admin.register(Project)
 class ProjectAdmin(admin.ModelAdmin):
     list_display = (
         'name',
@@ -16,9 +18,6 @@ class ProjectAdmin(admin.ModelAdmin):
     )
 
 
+@admin.register(Skill)
 class SkillAdmin(admin.ModelAdmin):
     list_display = ('name',)
-
-
-admin.site.register(Project, ProjectAdmin)
-admin.site.register(Skill, SkillAdmin)

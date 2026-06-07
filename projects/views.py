@@ -1,21 +1,32 @@
-from django.shortcuts import render, redirect, get_object_or_404
-from django.views.generic import ListView, DetailView
+import json
+import http
+
+from django.contrib.auth.decorators import login_required
+from django.db.models import Count
 from django.http import JsonResponse
+from django.shortcuts import get_object_or_404, redirect, render
+from django.views.decorators.http import require_POST
+from django.views.generic import DetailView, ListView
+
+import constants
 from .forms import CreateProjectForm
 from .models import Project, Skill
-from django.views.decorators.http import require_POST
-from django.contrib.auth.decorators import login_required
-import json
 
 
 class ProjectListView(ListView):
     model = Project
     template_name = 'projects/project_list.html'
     context_object_name = 'projects'
-    paginate_by = 12
+    paginate_by = constants.PAGINATE_BY
 
     def get_queryset(self):
-        qs = Project.objects.prefetch_related('skills').order_by('-created_at')
+        qs = (
+            Project.objects
+            .select_related('owner')
+            .prefetch_related('skills')
+            .annotate(participants_count=Count('participants', distinct=True))
+            .order_by('-created_at')
+        )
         skill = self.request.GET.get('skill', '').strip()
         if skill:
             qs = qs.filter(skills__name__iexact=skill).distinct()
@@ -43,49 +54,41 @@ class SkillListView(ListView):
 
 @login_required
 def create_project(request):
-    if request.method == 'POST':
-        form = CreateProjectForm(request.POST)
-        if form.is_valid():
-            project = form.save(commit=False)
-            project.owner = request.user
-            project.save()
-            form.save_m2m()
-            project.participants.add(request.user)
-            return redirect('projects:project_detail', pk=project.pk)
-    else:
-        form = CreateProjectForm()
+    form = CreateProjectForm(request.POST or None)
+
+    if form.is_valid():
+        project = form.save(commit=False)
+        project.owner = request.user
+        project.save()
+        form.save_m2m()
+        project.participants.add(request.user)
+        return redirect('projects:project_detail', pk=project.pk)
+    
     return render(request, 'projects/create-project.html', {'form': form, 'is_edit': False})
 
 
 @login_required
 def edit_project(request, pk):
-    try:
-        project = Project.objects.get(pk=pk)
-    except Project.DoesNotExist:
-        return get_object_or_404(Project, pk=pk)
+    project = get_object_or_404(Project, pk=pk)
     
     if request.user != project.owner:
-        return JsonResponse({'error': 'Forbidden'}, status=403)
+        return http.HttpResponseForbidden('Forbidden')
     
-    if request.method == 'POST':
-        form = CreateProjectForm(request.POST, instance=project)
-        if form.is_valid():
-            form.save()
-            return redirect('projects:project_detail', pk=project.pk)
-    else:
-        form = CreateProjectForm(instance=project)
+    form = CreateProjectForm(request.POST or None, instance=project)
+    
+    if form.is_valid():
+        form.save()
+        return redirect('projects:project_detail', pk=project.pk)
+    
     return render(request, 'projects/create-project.html', {'form': form, 'is_edit': True})
 
 
 @login_required
 def close_project(request, pk):
-    try:
-        project = Project.objects.get(pk=pk)
-    except Project.DoesNotExist:
-        return get_object_or_404(Project, pk=pk)
+    project = get_object_or_404(Project, pk=pk)
     
     if request.user != project.owner:
-        return JsonResponse({'error': 'Forbidden'}, status=403)
+        return http.HttpResponseForbidden('Forbidden')
     
     project.status = 'closed'
     project.save()
@@ -98,7 +101,7 @@ def get_skills(request):
         Skill.objects
         .filter(name__istartswith=q)
         .order_by('name')
-        .values('id', 'name')[:10]
+        .values('id', 'name')[:constants.COUNT_SKILLS]
     )
     return JsonResponse(list(skills), safe=False)
 
@@ -106,10 +109,7 @@ def get_skills(request):
 @require_POST
 @login_required
 def add_skill(request, pk):
-    try:
-        project = Project.objects.get(pk=pk)
-    except Project.DoesNotExist:
-        return get_object_or_404(Project, pk=pk)
+    project = get_object_or_404(Project, pk=pk)
 
     if project.owner != request.user:
         return JsonResponse({'error': 'Forbidden'}, status=403)
@@ -141,34 +141,27 @@ def add_skill(request, pk):
 
 @login_required
 def toggle_participation(request, pk):
-    try:
-        project = Project.objects.get(pk=pk)
-    except Project.DoesNotExist:
-        return get_object_or_404(Project, pk=pk)
+    project = get_object_or_404(Project, pk=pk)
 
     if project.owner == request.user:
         return JsonResponse({'error': 'Forbidden'}, status=403)
-
-    if project.participants.filter(pk=request.user.pk).exists():
+    
+    is_participant = project.participants.filter(pk=request.user.pk).exists()
+    if is_participant:
         project.participants.remove(request.user)
-        participating = False
     else:
         project.participants.add(request.user)
-        participating = True
 
     return JsonResponse({
         'status': 'ok',
-        'participant': participating,
+        'participant': not is_participant,
     })
 
 
 @login_required
 def remove_skill(request, pk, skill_id):
-    try:
-        project = Project.objects.get(pk=pk)
-    except Project.DoesNotExist:
-        return get_object_or_404(Project, pk=pk)
-
+    project = get_object_or_404(Project, pk=pk)
+    
     if project.owner != request.user:
         return JsonResponse({'error': 'Forbidden'}, status=403)
 

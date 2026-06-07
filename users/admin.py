@@ -1,8 +1,16 @@
 from django.contrib import admin
-from .models import User
+from django.contrib.auth import get_user_model
+from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
+
+User = get_user_model()
 
 
-class UserAdmin(admin.ModelAdmin):
+@admin.register(User)
+class UserAdmin(BaseUserAdmin):
+    ordering = ('email',)
+
+    search_fields = ('email', 'name', 'surname')
+    
     list_display = (
         'email',
         'name',
@@ -15,5 +23,3 @@ class UserAdmin(admin.ModelAdmin):
         'is_staff',
         'is_active'
     )
-
-admin.site.register(User, UserAdmin)
