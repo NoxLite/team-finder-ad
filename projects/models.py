@@ -1,0 +1,48 @@
+from django.db import models
+from django.conf import settings
+
+
+class Project(models.Model):
+
+    name = models.CharField(max_length=200, verbose_name="Название проекта")
+    description = models.TextField(blank=True, verbose_name="Описание проекта")
+    owner = models.ForeignKey(
+        settings.AUTH_USER_MODEL, 
+        on_delete=models.CASCADE, 
+        related_name='owned_projects',
+        verbose_name="Владелец проекта"
+    )
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Дата создания")
+    github_url = models.URLField(blank=True, verbose_name="Ссылка на GitHub")
+    status = models.CharField(
+        max_length=6, 
+        choices=[('open', 'Открытый'), ('closed', 'Закрытый')],           
+        default='open', 
+        verbose_name="Статус проекта"
+    )
+    participants = models.ManyToManyField(
+        settings.AUTH_USER_MODEL, 
+        related_name='participated_projects', 
+        blank=True,
+        verbose_name="Участники проекта"
+    )
+    skills = models.ManyToManyField('projects.Skill',
+        related_name='projects', 
+        blank=True,
+        verbose_name='Навыки'
+    )
+
+    class Meta:
+        verbose_name = "проект"
+        verbose_name_plural = "Проекты"
+
+
+class Skill(models.Model):
+    name = models.CharField(max_length=124, unique=True)
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        verbose_name = "навык"
+        verbose_name_plural = "Навыки"
