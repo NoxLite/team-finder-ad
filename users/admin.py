@@ -16,6 +16,7 @@ class UserAdmin(BaseUserAdmin):
         'name',
         'surname',
         'phone',
+        'github_url',
         'is_staff',
         'is_active'
     )

@@ -1,9 +1,7 @@
 from django import forms
 from django.contrib.auth import get_user_model 
-from django.core.validators import URLValidator
-from django.core.exceptions import ValidationError
 
-import constants
+from mixins import GitHubURLCleanerMixin
 
 User = get_user_model()
 
@@ -28,7 +26,7 @@ class LoginForm(forms.Form):
     password = forms.CharField(widget=forms.PasswordInput)
 
 
-class EditProfileForm(forms.ModelForm, constants.GitHubURLCleanerMixin):
+class EditProfileForm(GitHubURLCleanerMixin, forms.ModelForm):
     class Meta:
         model = User
         fields = ['name', 'surname', 'avatar', 'about', 'phone', 'github_url']

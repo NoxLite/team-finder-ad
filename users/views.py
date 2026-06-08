@@ -4,6 +4,7 @@ from django.contrib.auth.forms import PasswordChangeForm
 from django.shortcuts import redirect, render
 from django.views.generic import DetailView, ListView
 
+import constants
 from .forms import EditProfileForm, LoginForm, RegistrationForm
 from .models import User
 
@@ -14,7 +15,7 @@ class UserListView(ListView):
     model = User
     template_name = 'users/participants.html'
     context_object_name = 'participants'
-    paginate_by = 12
+    paginate_by = constants.PAGINATE_BY
 
     def get_queryset(self):
         return User.objects.all().order_by('id')

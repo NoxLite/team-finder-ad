@@ -1,9 +1,7 @@
-import constants
-
 from django.conf import settings
 from django.db import models
 
-
+import constants
 
 class Project(models.Model):
 
@@ -18,7 +16,7 @@ class Project(models.Model):
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="Дата создания")
     github_url = models.URLField(blank=True, verbose_name="Ссылка на GitHub")
     status = models.CharField(
-        max_length=6, 
+        max_length=constants.MAX_LEN_STATUS_PROJECT, 
         choices=constants.CHOICES_STATUS,           
         default=constants.DEFAULT_PROJECT_STATUS, 
         verbose_name="Статус проекта"

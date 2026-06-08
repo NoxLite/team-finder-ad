@@ -1,10 +1,10 @@
-from django import forms
-from django.core.exceptions import ValidationError
-from django.core.validators import URLValidator
-
 LEN_NAME_PROJECT = 200
-CHOICES_STATUS = [('open', 'Открытый'), ('closed', 'Закрытый')]
+OPEN_STATUS = 'open'
+CLOSED_STATUS = 'closed'
+CHOICES_STATUS = [(OPEN_STATUS, 'Открытый'), (CLOSED_STATUS, 'Закрытый')]
 DEFAULT_PROJECT_STATUS = 'open'
+MAX_LEN_STATUS_PROJECT = 6
+PROJECT_STATUS_CLOSE = 'close'
 
 LEN_NAME_SKILL = 124
 
@@ -20,23 +20,3 @@ LEN_NAME_USER = 124
 LEN_SURNAME = 124
 LEN_PHONE = 12
 LEN_ABOUT = 256
-
-
-class GitHubURLCleanerMixin:
-    def clean_github_url(self):
-        github_url = self.cleaned_data.get('github_url')
-        
-        if not github_url:
-            return github_url
-        
-        validator = URLValidator()
-        try:
-            validator(github_url)
-        except ValidationError:
-            raise forms.ValidationError('Введите корректную ссылку на GitHub')
-        
-    
-        if not github_url.startswith('https://github.com/'):
-            raise forms.ValidationError('Ссылка на GitHub должна начинаться с https://github.com/')
-        
-        return github_url

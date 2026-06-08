@@ -73,7 +73,7 @@ cp .env_example .env
 | **POSTGRES_PASSWORD** | Пароль пользователя PostgreSQL.                                                                                                                            | 
 | **POSTGRES_HOST**     | Адрес сервера БД. В случае локальной разработки localhost.                                                                                                 | 
 | **POSTGRES_PORT**     | Порт подключения к БД (по умолчанию `5432`).                                                                                                               |
- 
+| **ALLOWED_HOSTS**     | Разрешённые хосты для Django                                                                                                                               |
 ## Шаг 3. Запуск PostgreSQL 
  
 Для работы приложения **TeamFinder** используется база данных **PostgreSQL**. 
